@@ -66,6 +66,36 @@ const LecturerDashboard = ({ user }) => {
 
   useEffect(() => {
     fetchData();
+    
+    // Set up real-time subscription for new students
+    const studentsSubscription = supabase
+      .channel('students_changes')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'students' },
+        (payload) => {
+          console.log('New student registered:', payload.new);
+          // Add new student to the list with a "new" flag
+          const newStudent = { ...payload.new, isNew: true };
+          setStudents(prevStudents => [...prevStudents, newStudent]);
+          
+          // Show notification
+          alert(`🎉 New student registered: ${newStudent.name} (${newStudent.email})`);
+          
+          // Remove "new" flag after 10 seconds
+          setTimeout(() => {
+            setStudents(prev => prev.map(s => 
+              s.student_id === newStudent.student_id 
+                ? { ...s, isNew: false }
+                : s
+            ));
+          }, 10000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      studentsSubscription.unsubscribe();
+    };
   }, []);
 
   const fetchData = async () => {
@@ -499,7 +529,15 @@ const LecturerDashboard = ({ user }) => {
             className={`nav-link ${activeTab === 'analytics' ? 'active' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
-            <i className="fas fa-chart-line me-2"></i>Analytics
+            <i className="fas fa-chart-bar me-2"></i>Analytics
+          </button>
+        </li>
+        <li className="nav-item">
+          <button 
+            className={`nav-link ${activeTab === 'students' ? 'active' : ''}`}
+            onClick={() => setActiveTab('students')}
+          >
+            <i className="fas fa-users me-2"></i>Students
           </button>
         </li>
       </ul>
@@ -1006,6 +1044,72 @@ const LecturerDashboard = ({ user }) => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Students Tab */}
+      {activeTab === 'students' && (
+        <div className="card">
+          <div className="card-header">
+            <h3><i className="fas fa-users me-2"></i>Registered Students</h3>
+            <p className="text-muted mb-0">All students who have created accounts will appear here</p>
+          </div>
+          <div className="card-body">
+            {students.length === 0 ? (
+              <div className="text-center py-5">
+                <i className="fas fa-user-plus fa-3x text-muted mb-3"></i>
+                <p className="text-muted">No students registered yet.</p>
+                <p className="text-muted">Students will appear here automatically when they create accounts.</p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Registration Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.map(student => (
+                      <tr 
+                        key={student.student_id} 
+                        className={student.isNew ? 'table-success' : ''}
+                        style={student.isNew ? { 
+                          animation: 'pulse 2s infinite',
+                          boxShadow: '0 0 10px rgba(25, 135, 84, 0.5)'
+                        } : {}}
+                      >
+                        <td>
+                          <strong>{student.name}</strong>
+                          {student.isNew && (
+                            <span className="badge bg-success ms-2">
+                              <i className="fas fa-star me-1"></i>NEW
+                            </span>
+                          )}
+                        </td>
+                        <td>{student.email}</td>
+                        <td>
+                          {new Date(student.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                        <td>
+                          <span className="badge bg-primary">Active</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

@@ -71,7 +71,26 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
--- 7. Verify data was inserted
+-- 7. Enable real-time for students table (for live updates)
+ALTER PUBLICATION supabase_realtime ADD TABLE public.students;
+
+-- 8. Create test lecturer user (for demo purposes)
+-- Note: This will only work if the auth user exists
+DO $$
+BEGIN
+    -- Try to insert test lecturer if auth user exists
+    INSERT INTO public.users (id, email, role) 
+    SELECT id, 'testlecturer@test.com', 'lecturer'
+    FROM auth.users 
+    WHERE email = 'testlecturer@test.com'
+    ON CONFLICT (id) DO UPDATE SET role = 'lecturer';
+EXCEPTION
+    WHEN OTHERS THEN
+        -- If auth user doesn't exist, just continue
+        NULL;
+END $$;
+
+-- 9. Verify data was inserted
 SELECT 'Students:', COUNT(*) FROM public.students;
 SELECT 'Exams:', COUNT(*) FROM public.exams;
 SELECT 'Results:', COUNT(*) FROM public.results;

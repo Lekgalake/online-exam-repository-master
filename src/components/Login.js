@@ -4,11 +4,10 @@ import { supabase } from '../lib/supabase';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [selectedRole, setSelectedRole] = useState('student');
-  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e) => {
@@ -18,14 +17,6 @@ const Login = () => {
     setSuccessMessage('');
 
     try {
-      // Enhanced client-side validation
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        throw new Error('Please enter a valid email address.');
-      }
-      if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters long.');
-      }
-      
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -48,6 +39,22 @@ const Login = () => {
           } else {
             console.log('User profile created successfully with role:', selectedRole);
           }
+
+          // If user is a student, also add them to the students table
+          if (selectedRole === 'student') {
+            const studentName = data.user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const { error: studentError } = await supabase
+              .from('students')
+              .upsert({
+                name: studentName,
+                email: data.user.email
+              });
+            if (studentError) {
+              console.error('Error adding student to students table:', studentError);
+            } else {
+              console.log('Student added to students table successfully');
+            }
+          }
         }
         
         if (data.user && !data.user.email_confirmed_at) {
@@ -60,17 +67,7 @@ const Login = () => {
           email,
           password,
         });
-        if (error) {
-          if (error.message.includes('email not confirmed') || error.message.includes('Email not confirmed')) {
-            setError('📧 Email not confirmed. Please check your email for the confirmation link, or try signing up again.');
-            return;
-          }
-          if (error.message.includes('Invalid login credentials')) {
-            setError('❌ Invalid email or password. Please check your credentials and try again.');
-            return;
-          }
-          throw error;
-        }
+        if (error) throw error;
 
         // After successful login, check if user has a role assigned
         if (data.user) {
@@ -94,345 +91,250 @@ const Login = () => {
     }
   };
 
-  const handleQuickLogin = (email, password, message) => {
+  const handleQuickLogin = (email, password) => {
     setEmail(email);
     setPassword(password);
-    if (message) {
-      setError(message);
-    }
-  };
-
-  const handleCreateLecturerAccount = async () => {
-    setLoading(true);
-    setError('');
-    setSuccessMessage('');
-
-    try {
-      // Create lecturer account automatically
-      const lecturerEmail = 'lecturer@test.com';
-      const lecturerPassword = 'password123';
-
-      const { data, error } = await supabase.auth.signUp({
-        email: lecturerEmail,
-        password: lecturerPassword,
-      });
-
-      if (error) {
-        if (error.message.includes('already registered')) {
-          setSuccessMessage('✅ Lecturer account already exists! You can now log in with lecturer@test.com / password123');
-        } else {
-          throw error;
-        }
-      } else if (data.user) {
-        // Create the user profile with lecturer role
-        const { error: profileError } = await supabase
-          .from('users')
-          .upsert({
-            id: data.user.id,
-            email: lecturerEmail,
-            role: 'lecturer'
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-        }
-
-        setSuccessMessage('🎉 Lecturer account created successfully! You can now log in with lecturer@test.com / password123');
-      }
-    } catch (error) {
-      setError(`❌ Error creating lecturer account: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center" style={{ 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-    }}>
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-md-6 col-lg-5 col-xl-4">
-            {/* Main Card */}
-            <div className="card shadow-lg border-0" style={{ 
-              borderRadius: '20px',
+    <div 
+      className="min-vh-100 d-flex"
+      style={{ 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+      }}
+    >
+      {/* Left Side - Branding */}
+      <div className="col-lg-6 d-none d-lg-flex align-items-center justify-content-center text-white p-5">
+        <div className="text-center">
+          <div 
+            className="d-inline-flex align-items-center justify-content-center mb-4"
+            style={{
+              width: '120px',
+              height: '120px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '30px',
               backdropFilter: 'blur(10px)',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)'
-            }}>
-              <div className="card-body p-5">
-                {/* Header */}
-                <div className="text-center mb-4">
-                  <div className="mb-3">
-                    <div style={{
-                      width: '80px',
-                      height: '80px',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      borderRadius: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto',
-                      boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
-                    }}>
-                      <i className="fas fa-graduation-cap text-white" style={{ fontSize: '2rem' }}></i>
-                    </div>
-                  </div>
-                  <h2 className="fw-bold mb-2" style={{ 
+              border: '1px solid rgba(255, 255, 255, 0.3)'
+            }}
+          >
+            <i className="fas fa-graduation-cap" style={{ fontSize: '3.5rem' }}></i>
+          </div>
+          <h1 className="display-4 fw-bold mb-4">Online Exam Repository</h1>
+          <p className="lead mb-4">Streamline your academic journey with our comprehensive exam management system</p>
+          <div className="row text-center">
+            <div className="col-4">
+              <i className="fas fa-chart-line fa-2x mb-2"></i>
+              <p className="small">Track Progress</p>
+            </div>
+            <div className="col-4">
+              <i className="fas fa-file-pdf fa-2x mb-2"></i>
+              <p className="small">Export Results</p>
+            </div>
+            <div className="col-4">
+              <i className="fas fa-users fa-2x mb-2"></i>
+              <p className="small">Manage Students</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="col-lg-6 d-flex align-items-center justify-content-center p-4">
+        <div className="w-100" style={{ maxWidth: '450px' }}>
+          <div 
+            className="card border-0 shadow-lg"
+            style={{ 
+              borderRadius: '25px',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)'
+            }}
+          >
+            <div className="card-body p-5">
+              {/* Mobile Header */}
+              <div className="text-center mb-4 d-lg-none">
+                <div 
+                  className="d-inline-flex align-items-center justify-content-center mb-3"
+                  style={{
+                    width: '70px',
+                    height: '70px',
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    fontSize: '1.8rem'
-                  }}>
-                    {isSignUp ? 'Create Account' : 'Welcome Back'}
-                  </h2>
-                  <p className="text-muted mb-0">
-                    {isSignUp ? 'Join the exam management system' : 'Sign in to your dashboard'}
-                  </p>
+                    borderRadius: '18px'
+                  }}
+                >
+                  <i className="fas fa-graduation-cap text-white" style={{ fontSize: '1.8rem' }}></i>
+                </div>
+                <h3 className="fw-bold text-dark">Online Exam Repository</h3>
+              </div>
+
+              {/* Welcome Message */}
+              <div className="text-center mb-4">
+                <h2 className="fw-bold text-dark mb-2">{isSignUp ? 'Create Account' : 'Welcome Back'}</h2>
+                <p className="text-muted">{isSignUp ? 'Join our academic community' : 'Sign in to access your dashboard'}</p>
+              </div>
+
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  {error}
+                </div>
+              )}
+              {successMessage && (
+                <div className="alert alert-success d-flex align-items-center mb-4" role="alert">
+                  <i className="fas fa-check-circle me-2"></i>
+                  {successMessage}
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                  <label htmlFor="email" className="form-label fw-semibold text-dark">
+                    <i className="fas fa-envelope me-2 text-primary"></i>Email Address
+                  </label>
+                  <input
+                    type="email"
+                    className="form-control form-control-lg"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={{ 
+                      borderRadius: '15px',
+                      border: '2px solid #e9ecef',
+                      padding: '15px 20px'
+                    }}
+                    placeholder="Enter your email"
+                  />
                 </div>
 
-                {/* Success Message */}
-                {successMessage && (
-                  <div className="alert alert-success border-0 mb-4" style={{ borderRadius: '12px' }}>
-                    <i className="fas fa-check-circle me-2"></i>
-                    {successMessage}
-                  </div>
-                )}
+                <div className="mb-4">
+                  <label htmlFor="password" className="form-label fw-semibold text-dark">
+                    <i className="fas fa-lock me-2 text-primary"></i>Password
+                  </label>
+                  <input
+                    type="password"
+                    className="form-control form-control-lg"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{ 
+                      borderRadius: '15px',
+                      border: '2px solid #e9ecef',
+                      padding: '15px 20px'
+                    }}
+                    placeholder="Enter your password"
+                  />
+                </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="alert alert-danger border-0 mb-4" style={{ borderRadius: '12px' }}>
-                    <i className="fas fa-exclamation-triangle me-2"></i>
-                    {error}
-                  </div>
-                )}
-
-                {/* Lecturer Notice */}
-                {!isSignUp && (
-                  <div className="alert alert-info border-0 mb-4" style={{ borderRadius: '12px' }}>
-                    <i className="fas fa-info-circle me-2"></i>
-                    <strong>Want to test lecturer features?</strong> Click "Don't have an account? Sign Up" and select "Lecturer" role.
-                  </div>
-                )}
-
-                {/* Form */}
-                <form onSubmit={handleSubmit}>
+                {/* Role Selection for Sign Up */}
+                {isSignUp && (
                   <div className="mb-4">
-                    <label htmlFor="email" className="form-label fw-semibold">
-                      <i className="fas fa-envelope me-2 text-primary"></i>Email Address
+                    <label htmlFor="role" className="form-label fw-semibold text-dark">
+                      <i className="fas fa-user-tag me-2 text-primary"></i>Account Type
                     </label>
-                    <input
-                      type="email"
-                      className="form-control form-control-lg"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
+                    <select
+                      className="form-select form-select-lg"
+                      id="role"
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
                       style={{ 
-                        borderRadius: '12px',
+                        borderRadius: '15px',
                         border: '2px solid #e9ecef',
-                        padding: '12px 16px',
-                        fontSize: '1rem'
+                        padding: '15px 20px'
                       }}
-                      required
-                    />
+                    >
+                      <option value="student">🎓 Student</option>
+                      <option value="lecturer">👨‍🏫 Lecturer</option>
+                    </select>
                   </div>
+                )}
 
-                  <div className="mb-4">
-                    <label htmlFor="password" className="form-label fw-semibold">
-                      <i className="fas fa-lock me-2 text-primary"></i>Password
-                    </label>
-                    <div className="input-group">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        className="form-control form-control-lg"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
-                        style={{ 
-                          borderRadius: '12px 0 0 12px',
-                          border: '2px solid #e9ecef',
-                          borderRight: 'none',
-                          padding: '12px 16px',
-                          fontSize: '1rem'
-                        }}
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={() => setShowPassword(!showPassword)}
-                        style={{ 
-                          borderRadius: '0 12px 12px 0',
-                          border: '2px solid #e9ecef',
-                          borderLeft: 'none',
-                          padding: '12px 16px'
-                        }}
-                      >
-                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                      </button>
-                    </div>
-                    <div className="form-text mt-2">
-                      <i className="fas fa-info-circle me-1"></i>
-                      Password must be at least 6 characters long
-                    </div>
-                  </div>
-
-                  {isSignUp && (
-                    <div className="mb-4">
-                      <label htmlFor="role" className="form-label fw-semibold">
-                        <i className="fas fa-user-tag me-2 text-primary"></i>Account Type
-                      </label>
-                      <select
-                        className="form-select form-select-lg"
-                        id="role"
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        style={{ 
-                          borderRadius: '12px',
-                          border: '2px solid #e9ecef',
-                          padding: '12px 16px',
-                          fontSize: '1rem'
-                        }}
-                      >
-                        <option value="student">🎓 Student - View your exam results</option>
-                        <option value="lecturer">👨‍🏫 Lecturer - Manage all exam results</option>
-                      </select>
-                      <div className="form-text mt-2">
-                        <i className="fas fa-lightbulb me-1"></i>
-                        <strong>To test lecturer features:</strong> Select "Lecturer" and sign up with any email.
-                        <br />
-                        <i className="fas fa-info-circle me-1"></i>
-                        <strong>Note:</strong> Lecturer accounts can manage all exam results and add new students.
-                      </div>
-                    </div>
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-lg w-100 text-white fw-bold mb-4"
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    border: 'none',
+                    borderRadius: '15px',
+                    padding: '15px',
+                    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)'
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      {isSignUp ? 'Creating Account...' : 'Signing In...'}
+                    </>
+                  ) : (
+                    <>
+                      <i className={`fas ${isSignUp ? 'fa-user-plus' : 'fa-sign-in-alt'} me-2`}></i>
+                      {isSignUp ? 'Create Account' : 'Sign In'}
+                    </>
                   )}
+                </button>
+              </form>
 
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-lg w-100 mb-4"
-                    disabled={loading || !email || !password}
-                    style={{ 
-                      borderRadius: '12px',
-                      padding: '14px',
-                      fontSize: '1.1rem',
-                      fontWeight: '600',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      border: 'none',
-                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        {isSignUp ? 'Creating Account...' : 'Signing In...'}
-                      </>
-                    ) : (
-                      <>
-                        <i className={`fas ${isSignUp ? 'fa-user-plus' : 'fa-sign-in-alt'} me-2`}></i>
-                        {isSignUp ? 'Create Account' : 'Sign In'}
-                      </>
-                    )}
-                  </button>
-                </form>
+              {/* Toggle Sign Up/Login */}
+              <div className="text-center mb-4">
+                <button
+                  type="button"
+                  className="btn btn-link text-decoration-none fw-semibold"
+                  onClick={() => {
+                    setIsSignUp(!isSignUp);
+                    setError('');
+                    setSuccessMessage('');
+                  }}
+                  style={{ color: '#667eea' }}
+                >
+                  {isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up'}
+                </button>
+              </div>
 
-                {/* Toggle Sign Up/Login */}
-                <div className="text-center">
-                  <button
-                    type="button"
-                    className="btn btn-link text-decoration-none"
-                    onClick={() => {
-                      setIsSignUp(!isSignUp);
-                      setError('');
-                      setSuccessMessage('');
-                    }}
-                    style={{ 
-                      color: '#667eea',
-                      fontWeight: '500'
-                    }}
-                  >
-                    <i className={`fas ${isSignUp ? 'fa-sign-in-alt' : 'fa-user-plus'} me-2`}></i>
-                    {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-                  </button>
-                </div>
-
-                {/* Quick Test Accounts */}
-                {!isSignUp && (
-                  <div className="mt-4 p-4" style={{ 
-                    backgroundColor: '#f8f9fa',
-                    borderRadius: '16px',
-                    border: '1px solid #e9ecef'
-                  }}>
-                    <h6 className="mb-3 fw-semibold text-center">
-                      <i className="fas fa-flask me-2 text-primary"></i>Quick Test Accounts
-                    </h6>
-                    <div className="d-grid gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={() => handleQuickLogin('teststudent@gmail.com', 'password123')}
-                        style={{ borderRadius: '8px', padding: '10px' }}
-                      >
-                        <i className="fas fa-user-graduate me-2"></i>
-                        Login as Student (teststudent@gmail.com)
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-outline-success btn-sm"
-                        onClick={() => handleQuickLogin('john.doe@student.com', 'password123')}
-                        style={{ borderRadius: '8px', padding: '10px' }}
-                      >
-                        <i className="fas fa-user me-2"></i>
-                        Login as Sample Student (john.doe@student.com)
-                      </button>
+              {/* Quick Login Buttons */}
+              {!isSignUp && (
+                <div className="border-top pt-4">
+                  <p className="text-center text-muted mb-3">
+                    <small><i className="fas fa-rocket me-1"></i>Quick Demo Access</small>
+                  </p>
+                  <div className="d-grid gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={() => handleQuickLogin('john.doe@student.com', 'password123')}
+                      style={{ borderRadius: '10px' }}
+                    >
+                      <i className="fas fa-user-graduate me-2"></i>Demo Student
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-success btn-sm"
+                      onClick={() => handleQuickLogin('teststudent@gmail.com', 'password123')}
+                      style={{ borderRadius: '10px' }}
+                    >
+                      <i className="fas fa-user me-2"></i>Test Student
+                    </button>
                     <button
                       type="button"
                       className="btn btn-outline-warning btn-sm"
-                      onClick={handleCreateLecturerAccount}
-                      disabled={loading}
-                      style={{ borderRadius: '8px', padding: '10px' }}
+                      onClick={() => handleQuickLogin('testlecturer@test.com', 'password123')}
+                      style={{ borderRadius: '10px' }}
                     >
-                      <i className="fas fa-chalkboard-teacher me-2"></i>
-                      {loading ? 'Creating...' : 'Create Lecturer Account'}
+                      <i className="fas fa-chalkboard-teacher me-2"></i>Test Lecturer
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-info btn-sm"
-                      onClick={() => handleQuickLogin('newlecturer@test.com', 'password123')}
-                      style={{ borderRadius: '8px', padding: '10px' }}
-                    >
-                      <i className="fas fa-sign-in-alt me-2"></i>
-                      Login as New Lecturer (newlecturer@test.com)
-                    </button>
-                    </div>
-                    <div className="text-center mt-3">
-                      <small className="text-muted">
-                        <i className="fas fa-info-circle me-1"></i>
-                        Use these accounts to test different user roles
-                      </small>
-                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="text-center mt-4">
-              <p className="text-white-50 mb-0">
-                <i className="fas fa-shield-alt me-2"></i>
-                Secure authentication powered by Supabase
-              </p>
+                  <div className="text-center mt-3">
+                    <small className="text-muted">
+                      <i className="fas fa-info-circle me-1"></i>
+                      Use demo accounts above or create your own account
+                    </small>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -93,12 +93,13 @@ const StudentDashboard = ({ user }) => {
       r.exams?.date ? new Date(r.exams.date).toLocaleDateString() : '-',
       `${r.score}%`,
       gradeFor(r.score),
-      statusFor(r.score)
+      statusFor(r.score),
+      r.score >= 75 ? 'Yes' : 'No'
     ]);
 
       autoTable(doc, {
         startY: 32,
-        head: [['Course', 'Exam', 'Date', 'Score', 'Grade', 'Status']],
+        head: [['Course', 'Exam', 'Date', 'Score', 'Grade', 'Status', 'Distinction']],
         body: rows,
         styles: { fontSize: 10 },
         headStyles: { fillColor: [13, 110, 253] }
@@ -126,12 +127,13 @@ const StudentDashboard = ({ user }) => {
       result.exams?.date ? new Date(result.exams.date).toLocaleDateString() : '-',
       `${result.score}%`,
       gradeFor(result.score),
-      statusFor(result.score)
+      statusFor(result.score),
+      result.score >= 75 ? 'Yes' : 'No'
     ]];
 
       autoTable(doc, {
         startY: 32,
-        head: [['Course', 'Exam', 'Date', 'Score', 'Grade', 'Status']],
+        head: [['Course', 'Exam', 'Date', 'Score', 'Grade', 'Status', 'Distinction']],
         body,
         styles: { fontSize: 11 },
         headStyles: { fillColor: [25, 135, 84] }
@@ -280,14 +282,15 @@ const StudentDashboard = ({ user }) => {
 
   // Calculate statistics
   const calculateStats = () => {
-    if (results.length === 0) return { average: 0, highest: 0, lowest: 0, total: 0 };
+    if (results.length === 0) return { average: 0, highest: 0, lowest: 0, total: 0, distinctions: 0 };
     
     const scores = results.map(r => r.score);
     const average = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
     const highest = Math.max(...scores);
     const lowest = Math.min(...scores);
+    const distinctions = scores.filter(score => score >= 75).length;
     
-    return { average, highest, lowest, total: results.length };
+    return { average, highest, lowest, total: results.length, distinctions };
   };
 
   // Filter results
@@ -363,6 +366,17 @@ const StudentDashboard = ({ user }) => {
               <div className="card-body text-center">
                 <h5 className="card-title">Total Exams</h5>
                 <h2>{stats.total}</h2>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card bg-warning text-dark">
+              <div className="card-body text-center">
+                <h5 className="card-title">
+                  <i className="fas fa-star me-2"></i>Distinctions
+                </h5>
+                <h2>{stats.distinctions}</h2>
+                <small>Scores ≥ 75%</small>
               </div>
             </div>
           </div>
@@ -442,14 +456,18 @@ const StudentDashboard = ({ user }) => {
                           result.score >= 90 ? 'bg-success' :
                           result.score >= 80 ? 'bg-primary' :
                           result.score >= 70 ? 'bg-warning' :
-                          result.score >= 60 ? 'bg-info' :
-                          'bg-danger'
+                          result.score >= 60 ? 'bg-secondary' : 'bg-danger'
                         }`}>
                           {result.score >= 90 ? 'A' :
                            result.score >= 80 ? 'B' :
                            result.score >= 70 ? 'C' :
                            result.score >= 60 ? 'D' : 'F'}
                         </span>
+                        {result.score >= 75 && (
+                          <span className="badge bg-warning text-dark ms-2">
+                            <i className="fas fa-star me-1"></i>Distinction
+                          </span>
+                        )}
                       </td>
                       <td>
                         <span className={`badge ${
