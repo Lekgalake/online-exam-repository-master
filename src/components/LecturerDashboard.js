@@ -43,6 +43,32 @@ const LecturerDashboard = ({ user }) => {
   const [analyticsStartDate, setAnalyticsStartDate] = useState('');
   const [analyticsEndDate, setAnalyticsEndDate] = useState('');
 
+    // Remove student handler
+    const handleRemoveStudent = async (student_id) => {
+      const confirmDelete = window.confirm('Are you sure you want to remove this student? This will also delete all their results.');
+      if (!confirmDelete) return;
+      try {
+        // Delete all results for this student first
+        const { error: resultsError } = await supabase
+          .from('results')
+          .delete()
+          .eq('student_id', student_id);
+        if (resultsError) throw resultsError;
+
+        // Now delete the student
+        const { error: studentError } = await supabase
+          .from('students')
+          .delete()
+          .eq('student_id', student_id);
+        if (studentError) throw studentError;
+
+        await fetchData();
+        alert('Student and all their results removed successfully!');
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+
   // Form states
   const [newResult, setNewResult] = useState({
     student_id: '',
@@ -1106,6 +1132,11 @@ const LecturerDashboard = ({ user }) => {
                         <td>
                           <span className="badge bg-primary">Active</span>
                         </td>
+                          <td>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleRemoveStudent(student.student_id)}>
+                              Remove
+                            </button>
+                          </td>
                       </tr>
                     ))}
                   </tbody>
