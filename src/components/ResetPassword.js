@@ -8,7 +8,6 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [debugInfo, setDebugInfo] = useState('');
   const [passwordStrength, setPasswordStrength] = useState('');
   const [hasRecoverySession, setHasRecoverySession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -20,6 +19,12 @@ const ResetPassword = () => {
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  useEffect(() => {
+    const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
+    console.log('Site URL:', siteUrl);
+    console.log('Current origin:', window.location.origin);
+  }, []);
 
   useEffect(() => {
     if (message) {
@@ -163,6 +168,13 @@ const ResetPassword = () => {
     setError('');
     setMessage('');
 
+    // Ensure we're not still checking for a session
+    if (isCheckingSession) {
+      setError('❌ Still verifying your access. Please wait...');
+      setLoading(false);
+      return;
+    }
+
     // Ensure the page was opened from the password reset email link
     if (!hasRecoverySession) {
       setError('❌ This page must be opened from the password reset email link. Please request a new link.');
@@ -283,8 +295,41 @@ const ResetPassword = () => {
                 <p className="text-muted">Enter a strong password to secure your account</p>
               </div>
 
+              {/* Debug Information - Only show in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="alert alert-info mb-4" role="alert">
+                  <small>
+                    <strong>Site URL:</strong> {process.env.REACT_APP_SITE_URL || window.location.origin}
+                    <br />
+                    <strong>Current Origin:</strong> {window.location.origin}
+                  </small>
+                </div>
+              )}
+
+              {/* Development Helper - Remove this in production */}
+              {process.env.NODE_ENV === 'development' && window.location.hash && (
+                <div className="alert alert-secondary mb-4" role="alert">
+                  <small>
+                    <strong>URL Hash:</strong> {window.location.hash.substring(0, 50)}...
+                    <br />
+                    <strong>Has Access Token:</strong> {window.location.hash.includes('access_token') ? '✅ Yes' : '❌ No'}
+                    <br />
+                    <strong>Recovery Type:</strong> {new URLSearchParams(window.location.hash.substring(1)).get('type') || '❌ None'}
+                  </small>
+                </div>
+              )}
+
               {/* Recovery Session Warning Banner */}
-              {!hasRecoverySession && (
+              {isCheckingSession ? (
+                <div className="alert alert-info d-flex align-items-center mb-4" role="alert">
+                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  <div>
+                    <strong>Checking Access...</strong>
+                    <br />
+                    <small>Verifying your reset link...</small>
+                  </div>
+                </div>
+              ) : !hasRecoverySession && (
                 <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
                   <i className="fas fa-exclamation-triangle me-2"></i>
                   <div>
@@ -384,7 +429,7 @@ const ResetPassword = () => {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={loading || passwordStrength !== 'Strong' || password !== confirmPassword}
+                  disabled={loading || passwordStrength !== 'Strong' || password !== confirmPassword || isCheckingSession}
                   className="btn btn-lg w-100 text-white fw-bold mb-4"
                   style={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -392,13 +437,18 @@ const ResetPassword = () => {
                     borderRadius: '15px',
                     padding: '15px',
                     boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-                    opacity: (loading || passwordStrength !== 'Strong' || password !== confirmPassword) ? 0.7 : 1
+                    opacity: (loading || passwordStrength !== 'Strong' || password !== confirmPassword || isCheckingSession) ? 0.7 : 1
                   }}
                 >
                   {loading ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                       Updating Password...
+                    </>
+                  ) : isCheckingSession ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Checking Access...
                     </>
                   ) : (
                     <>
