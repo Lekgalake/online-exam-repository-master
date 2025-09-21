@@ -9,6 +9,7 @@ const ResetPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState('');
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +25,44 @@ const ResetPassword = () => {
       return () => clearTimeout(timer);
     }
   }, [message]);
+
+  // Detect whether there's a valid recovery session from the email link
+  useEffect(() => {
+    let mounted = true;
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!mounted) return;
+        setHasRecoverySession(!!data?.session?.user);
+      } catch (_e) {
+        if (!mounted) return;
+        setHasRecoverySession(false);
+      }
+    };
+
+    // Supabase processes the URL hash on load; small delay can help ensure it's parsed
+    const t = setTimeout(checkSession, 100);
+
+    // Also listen for auth events in case user lands and session gets established after mount
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setHasRecoverySession(!!session?.user);
+    });
+
+    // Auto-redirect to forgot password if no session after 3 seconds
+    const redirectTimer = setTimeout(() => {
+      if (!hasRecoverySession) {
+        navigate('/forgot-password');
+      }
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearTimeout(t);
+      clearTimeout(redirectTimer);
+      listener.subscription.unsubscribe();
+    };
+  }, [navigate, hasRecoverySession]);
 
   const validatePassword = (password) => {
     const requirements = [
@@ -64,6 +103,13 @@ const ResetPassword = () => {
     setLoading(true);
     setError('');
     setMessage('');
+
+    // Ensure the page was opened from the password reset email link
+    if (!hasRecoverySession) {
+      setError('❌ This page must be opened from the password reset email link. Please request a new link.');
+      setLoading(false);
+      return;
+    }
 
     // Validate password
     const passwordError = validatePassword(password);
@@ -177,6 +223,23 @@ const ResetPassword = () => {
                 <h2 className="fw-bold text-dark mb-2">Create New Password</h2>
                 <p className="text-muted">Enter a strong password to secure your account</p>
               </div>
+
+              {/* Recovery Session Warning Banner */}
+              {!hasRecoverySession && (
+                <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  <div>
+                    <strong>Access Required</strong>
+                    <br />
+                    <small>This page must be opened from the password reset email link. The link is valid for 1 hour.</small>
+                    <br />
+                    <Link to="/forgot-password" className="btn btn-sm btn-outline-warning mt-2">
+                      <i className="fas fa-envelope me-1"></i>
+                      Request New Reset Link
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               {/* Error/Success Messages */}
               {error && (
