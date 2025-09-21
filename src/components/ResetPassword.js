@@ -80,6 +80,9 @@ const ResetPassword = () => {
         console.error('Session check error:', error);
         if (!mounted) return;
         setHasRecoverySession(false);
+      } finally {
+        if (!mounted) return;
+        setIsCheckingSession(false);
       }
     };
 
@@ -91,14 +94,32 @@ const ResetPassword = () => {
       console.log('Auth state change:', _event, !!session?.user);
       if (!mounted) return;
       setHasRecoverySession(!!session?.user);
+      setIsCheckingSession(false);
     });
 
-    return () => {
-      mounted = false;
-      clearTimeout(t);
-      listener.subscription.unsubscribe();
-    };
-  }, []);
+    // Only set up auto-redirect if we're not checking for URL parameters
+    const hasUrlTokens = window.location.hash.includes('access_token');
+    if (!hasUrlTokens) {
+      const redirectTimer = setTimeout(() => {
+        if (!hasRecoverySession && !isCheckingSession) {
+          navigate('/forgot-password');
+        }
+      }, 3000);
+
+      return () => {
+        mounted = false;
+        clearTimeout(t);
+        clearTimeout(redirectTimer);
+        listener.subscription.unsubscribe();
+      };
+    } else {
+      return () => {
+        mounted = false;
+        clearTimeout(t);
+        listener.subscription.unsubscribe();
+      };
+    }
+  }, [navigate]);
 
   const validatePassword = (password) => {
     const requirements = [
