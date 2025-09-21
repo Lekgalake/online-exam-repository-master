@@ -9,6 +9,19 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  React.useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+  React.useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+  const [passwordStrength, setPasswordStrength] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,6 +31,23 @@ const Login = () => {
 
     try {
       if (isSignUp) {
+        // Password validation
+        const passwordRequirements = [
+          { regex: /.{8,}/, message: 'Password must be at least 8 characters.' },
+          { regex: /[A-Z]/, message: 'Password must contain an uppercase letter.' },
+          { regex: /[a-z]/, message: 'Password must contain a lowercase letter.' },
+          { regex: /[0-9]/, message: 'Password must contain a number.' },
+          { regex: /[!@#$%^&*(),.?":{}|<>]/, message: 'Password must contain a special character.' },
+          { regex: /^(?!.*(123456|qwerty|password|admin|letmein|yourname)).*$/, message: 'Password should not contain obvious patterns or dictionary words.' }
+        ];
+        for (const req of passwordRequirements) {
+          if (!req.regex.test(password)) {
+            setError(`❌ ${req.message}`);
+            setLoading(false);
+            return;
+          }
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -190,8 +220,8 @@ const Login = () => {
               {/* Form */}
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                  <label htmlFor="email" className="form-label fw-semibold text-dark">
-                    <i className="fas fa-envelope me-2 text-primary"></i>Email Address
+                  <label htmlFor="email" className="form-label fw-semibold text-dark" aria-label="Email Address">
+                    <i className="fas fa-envelope me-2 text-primary" aria-hidden="true"></i>Email Address
                   </label>
                   <input
                     type="email"
@@ -200,6 +230,8 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    aria-required="true"
+                    aria-label="Enter your email address"
                     style={{ 
                       borderRadius: '15px',
                       border: '2px solid #e9ecef',
@@ -210,16 +242,31 @@ const Login = () => {
                 </div>
 
                 <div className="mb-4">
-                  <label htmlFor="password" className="form-label fw-semibold text-dark">
-                    <i className="fas fa-lock me-2 text-primary"></i>Password
+                  <label htmlFor="password" className="form-label fw-semibold text-dark" aria-label="Password">
+                    <i className="fas fa-lock me-2 text-primary" aria-hidden="true"></i>Password
                   </label>
                   <input
                     type="password"
                     className="form-control form-control-lg"
                     id="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      // Password strength logic
+                      const val = e.target.value;
+                      let strength = '';
+                      if (val.length < 8) strength = 'Too short';
+                      else if (!/[A-Z]/.test(val)) strength = 'Add uppercase letter';
+                      else if (!/[a-z]/.test(val)) strength = 'Add lowercase letter';
+                      else if (!/[0-9]/.test(val)) strength = 'Add number';
+                      else if (!/[!@#$%^&*(),.?":{}|<>]/.test(val)) strength = 'Add special character';
+                      else if (/(123456|qwerty|password|admin|letmein|yourname)/i.test(val)) strength = 'Avoid common words';
+                      else strength = 'Strong';
+                      setPasswordStrength(strength);
+                    }}
                     required
+                    aria-required="true"
+                    aria-label="Enter your password"
                     style={{ 
                       borderRadius: '15px',
                       border: '2px solid #e9ecef',
@@ -227,6 +274,9 @@ const Login = () => {
                     }}
                     placeholder="Enter your password"
                   />
+                  {isSignUp && password && (
+                    <div className={`mt-1 small ${passwordStrength === 'Strong' ? 'text-success' : 'text-danger'}`}>{passwordStrength}</div>
+                  )}
                 </div>
 
                 {/* Role Selection for Sign Up */}
@@ -257,6 +307,7 @@ const Login = () => {
                   type="submit"
                   disabled={loading}
                   className="btn btn-lg w-100 text-white fw-bold mb-4"
+                  aria-label={isSignUp ? "Create Account" : "Sign In"}
                   style={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     border: 'none',
