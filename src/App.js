@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { supabase } from './lib/supabase';
 import Login from './components/Login';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
 import StudentDashboard from './components/StudentDashboard';
 import LecturerDashboard from './components/LecturerDashboard';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -119,6 +121,14 @@ function App() {
           <Route 
             path="/login" 
             element={user ? <Navigate to={user.role === 'student' ? '/student' : '/lecturer'} /> : <Login />} 
+          />
+          <Route 
+            path="/forgot-password" 
+            element={user ? <Navigate to={user.role === 'student' ? '/student' : '/lecturer'} /> : <ForgotPassword />} 
+          />
+          <Route 
+            path="/reset-password" 
+            element={user ? <Navigate to={user.role === 'student' ? '/student' : '/lecturer'} /> : <ResetPassword />} 
           />
           <Route 
             path="/student" 

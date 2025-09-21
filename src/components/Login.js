@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const Login = () => {
@@ -276,6 +277,18 @@ const Login = () => {
                   />
                   {isSignUp && password && (
                     <div className={`mt-1 small ${passwordStrength === 'Strong' ? 'text-success' : 'text-danger'}`}>{passwordStrength}</div>
+                  )}
+                  {!isSignUp && (
+                    <div className="text-end mt-2">
+                      <Link
+                        to="/forgot-password"
+                        className="text-decoration-none small"
+                        style={{ color: '#667eea' }}
+                      >
+                        <i className="fas fa-key me-1"></i>
+                        Forgot Password?
+                      </Link>
+                    </div>
                   )}
                 </div>
 
