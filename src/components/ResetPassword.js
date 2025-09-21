@@ -8,8 +8,10 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
   const [passwordStrength, setPasswordStrength] = useState('');
   const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
