@@ -31,38 +31,74 @@ const ResetPassword = () => {
     let mounted = true;
     const checkSession = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        // First, try to get the current session
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Session check error:', error);
+        }
+
         if (!mounted) return;
-        setHasRecoverySession(!!data?.session?.user);
-      } catch (_e) {
+
+        const hasSession = !!data?.session?.user;
+        console.log('Session check result:', { hasSession, user: data?.session?.user, error });
+
+        setHasRecoverySession(hasSession);
+
+        // If no session, check if we have URL parameters that need processing
+        if (!hasSession) {
+          console.log('No session found, checking URL for recovery parameters...');
+          const urlParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = urlParams.get('access_token');
+          const refreshToken = urlParams.get('refresh_token');
+          const type = urlParams.get('type');
+
+          console.log('URL parameters:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+
+          if (accessToken && type === 'recovery') {
+            console.log('Recovery tokens found in URL, setting session...');
+            // Set the session with the tokens from the URL
+            const { error: setSessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+
+            if (setSessionError) {
+              console.error('Set session error:', setSessionError);
+            } else {
+              console.log('Session set successfully from URL tokens');
+              // Re-check session after setting it
+              const { data: newData } = await supabase.auth.getSession();
+              if (!mounted) return;
+              const hasNewSession = !!newData?.session?.user;
+              console.log('Session after setting:', hasNewSession);
+              setHasRecoverySession(hasNewSession);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
         if (!mounted) return;
         setHasRecoverySession(false);
       }
     };
 
-    // Supabase processes the URL hash on load; small delay can help ensure it's parsed
-    const t = setTimeout(checkSession, 100);
+    // Small delay to ensure Supabase has processed the URL hash
+    const t = setTimeout(checkSession, 500);
 
-    // Also listen for auth events in case user lands and session gets established after mount
+    // Also listen for auth events
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state change:', _event, !!session?.user);
       if (!mounted) return;
       setHasRecoverySession(!!session?.user);
     });
 
-    // Auto-redirect to forgot password if no session after 3 seconds
-    const redirectTimer = setTimeout(() => {
-      if (!hasRecoverySession) {
-        navigate('/forgot-password');
-      }
-    }, 3000);
-
     return () => {
       mounted = false;
       clearTimeout(t);
-      clearTimeout(redirectTimer);
       listener.subscription.unsubscribe();
     };
-  }, [navigate, hasRecoverySession]);
+  }, []);
 
   const validatePassword = (password) => {
     const requirements = [

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -7,6 +7,13 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
+
+  // Debug information
+  useEffect(() => {
+    const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
+    setDebugInfo(`Site URL: ${siteUrl}, Origin: ${window.location.origin}`);
+  }, []);
 
   React.useEffect(() => {
     if (error) {
@@ -30,15 +37,23 @@ const ForgotPassword = () => {
 
     try {
       const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
+      console.log('Site URL:', siteUrl); // Debug log
+      console.log('Current origin:', window.location.origin); // Debug log
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${siteUrl}/reset-password`,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error); // Debug log
+        throw error;
+      }
 
+      console.log('Password reset email sent successfully'); // Debug log
       setMessage('🎉 Password reset email sent! Please check your email inbox and spam folder for the reset link.');
       setEmail(''); // Clear the form
     } catch (error) {
+      console.error('Forgot password error:', error); // Debug log
       setError(`❌ ${error.message}`);
     } finally {
       setLoading(false);
@@ -133,6 +148,13 @@ const ForgotPassword = () => {
                 <div className="alert alert-success d-flex align-items-center mb-4" role="alert">
                   <i className="fas fa-check-circle me-2"></i>
                   {message}
+                </div>
+              )}
+
+              {/* Debug Information - Only show in development */}
+              {process.env.NODE_ENV === 'development' && debugInfo && (
+                <div className="alert alert-info mb-4" role="alert">
+                  <small><strong>Debug Info:</strong> {debugInfo}</small>
                 </div>
               )}
 
