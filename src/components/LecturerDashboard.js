@@ -708,12 +708,14 @@ const LecturerDashboard = ({ user }) => {
                               (isEditing ? editForm.score : result.score) >= 80 ? 'bg-primary' :
                               (isEditing ? editForm.score : result.score) >= 70 ? 'bg-warning' :
                               (isEditing ? editForm.score : result.score) >= 60 ? 'bg-info' :
+                              (isEditing ? editForm.score : result.score) >= 50 ? 'bg-secondary' :
                               'bg-danger'
                             }`}>
                               {(isEditing ? editForm.score : result.score) >= 90 ? 'A' :
                                (isEditing ? editForm.score : result.score) >= 80 ? 'B' :
                                (isEditing ? editForm.score : result.score) >= 70 ? 'C' :
-                               (isEditing ? editForm.score : result.score) >= 60 ? 'D' : 'F'}
+                               (isEditing ? editForm.score : result.score) >= 60 ? 'D' :
+                               (isEditing ? editForm.score : result.score) >= 50 ? 'D' : 'F'}
                             </span>
                           </td>
                           <td>
