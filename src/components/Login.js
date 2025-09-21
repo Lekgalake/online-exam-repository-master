@@ -71,7 +71,7 @@ const Login = () => {
 
         // After successful login, check if user has a role assigned
         if (data.user) {
-          const { data: userData, error: roleError } = await supabase
+              const { error: roleError } = await supabase
             .from('users')
             .select('role')
             .eq('id', data.user.id)
