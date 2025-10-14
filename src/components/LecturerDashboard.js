@@ -33,8 +33,21 @@ const LecturerDashboard = ({ user }) => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [errorTimeout, setErrorTimeout] = useState(null);
   const [activeTab, setActiveTab] = useState('results');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Error handling utility
+  const showError = (message) => {
+    setError(message);
+    // Clear any existing timeout
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+    }
+    // Set new timeout to clear error after 8 seconds
+    const timeout = setTimeout(() => setError(''), 8000);
+    setErrorTimeout(timeout);
+  };
   const [filterStudent, setFilterStudent] = useState('');
   const [filterCourse, setFilterCourse] = useState('');
   // Analytics filters
@@ -139,15 +152,24 @@ const LecturerDashboard = ({ user }) => {
         `).order('created_at', { ascending: false })
       ]);
 
-      if (studentsResult.error) throw studentsResult.error;
-      if (examsResult.error) throw examsResult.error;
-      if (resultsResult.error) throw resultsResult.error;
+      if (studentsResult.error) {
+        showError('Failed to fetch students: ' + studentsResult.error.message);
+        return;
+      }
+      if (examsResult.error) {
+        showError('Failed to fetch exams: ' + examsResult.error.message);
+        return;
+      }
+      if (resultsResult.error) {
+        showError('Failed to fetch results: ' + resultsResult.error.message);
+        return;
+      }
 
       setStudents(studentsResult.data || []);
       setExams(examsResult.data || []);
       setResults(resultsResult.data || []);
     } catch (error) {
-      setError(error.message);
+      showError('An unexpected error occurred: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -175,11 +197,19 @@ const LecturerDashboard = ({ user }) => {
   const handleEditSave = async () => {
     // Validation
     if (!editForm.student_id || !editForm.exam_id || editForm.score === '' || editForm.score === null) {
-      setError('Please fill in all fields');
+      showError('Please fill in all fields');
       return;
     }
-    if (editForm.score < 0 || editForm.score > 100) {
-      setError('Score must be between 0 and 100');
+
+    // Check if score contains any non-numeric characters
+    if (!/^\d+$/.test(editForm.score)) {
+      showError('❌ Only numbers are allowed for marks. Please remove any letters or special characters.');
+      return;
+    }
+
+    const scoreNum = parseInt(editForm.score);
+    if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+      showError('Score must be a number between 0 and 100');
       return;
     }
     try {
@@ -231,7 +261,10 @@ const LecturerDashboard = ({ user }) => {
         .delete()
         .eq('exam_id', examId);
 
-      if (resultsError) throw resultsError;
+      if (resultsError) {
+        showError('Failed to delete exam results: ' + resultsError.message);
+        return;
+      }
 
       // Then delete the exam
       const { error: examError } = await supabase
@@ -239,12 +272,15 @@ const LecturerDashboard = ({ user }) => {
         .delete()
         .eq('exam_id', examId);
 
-      if (examError) throw examError;
+      if (examError) {
+        showError('Failed to delete exam: ' + examError.message);
+        return;
+      }
 
       await fetchData(); // Refresh the data
-      alert('Exam and associated results deleted successfully!');
+      showError('✅ Exam and associated results deleted successfully!');
     } catch (error) {
-      setError(`Failed to delete exam: ${error.message}`);
+      showError('An unexpected error occurred while deleting: ' + error.message);
     }
   };
 
@@ -281,16 +317,39 @@ const LecturerDashboard = ({ user }) => {
     
     // Validation
     if (!newResult.student_id || !newResult.exam_id || !newResult.score) {
-      setError('Please fill in all fields');
+      showError('Please fill in all fields');
+      return;
+    }
+
+    // Check if score contains any non-numeric characters
+    if (!/^\d+$/.test(newResult.score)) {
+      showError('❌ Only numbers are allowed for marks. Please remove any letters or special characters.');
       return;
     }
     
-    if (newResult.score < 0 || newResult.score > 100) {
-      setError('Score must be between 0 and 100');
+    const scoreNum = parseInt(newResult.score);
+    if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+      showError('Score must be a number between 0 and 100');
       return;
     }
     
     try {
+      // First check if this student already has a result for this exam
+      const { data: existingResult } = await supabase
+        .from('results')
+        .select('result_id')
+        .eq('student_id', newResult.student_id)
+        .eq('exam_id', newResult.exam_id)
+        .single();
+
+      if (existingResult) {
+        // Get student and exam details for the error message
+        const student = students.find(s => s.student_id === newResult.student_id);
+        const exam = exams.find(e => e.exam_id === newResult.exam_id);
+        showError(`${student?.name || 'This student'} already has a result for ${exam?.exam_name || 'this exam'}. Please edit the existing result instead.`);
+        return;
+      }
+
       const { error } = await supabase
         .from('results')
         .insert([{
@@ -299,36 +358,63 @@ const LecturerDashboard = ({ user }) => {
           score: parseInt(newResult.score)
         }]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          showError('This student already has a result for this exam. Please edit the existing result instead.');
+        } else {
+          showError('Failed to add result: ' + error.message);
+        }
+        return;
+      }
 
       setNewResult({ student_id: '', exam_id: '', score: '' });
-      setError('');
-      fetchData(); // Refresh data
-      alert('Result added successfully!');
+      await fetchData(); // Refresh data
+      showError('✅ Result added successfully!');
     } catch (error) {
-      setError(error.message);
+      showError('An unexpected error occurred: ' + error.message);
     }
   };
 
   const handleAddExam = async (e) => {
     e.preventDefault();
     try {
+      // Validate input
+      if (!newExam.course.trim()) {
+        showError('Course name is required');
+        return;
+      }
+      if (!newExam.exam_name.trim()) {
+        showError('Exam name is required');
+        return;
+      }
+      if (!newExam.date) {
+        showError('Exam date is required');
+        return;
+      }
+
       const { error } = await supabase
         .from('exams')
         .insert([{ 
-          course: newExam.course,
-          exam_name: newExam.exam_name,
+          course: newExam.course.trim(),
+          exam_name: newExam.exam_name.trim(),
           date: newExam.date,
           credits: parseInt(newExam.credits || 3)
         }]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          showError('An exam with this name already exists');
+        } else {
+          showError('Failed to add exam: ' + error.message);
+        }
+        return;
+      }
 
       setNewExam({ course: '', exam_name: '', date: '', credits: 3 });
-      fetchData(); // Refresh data
-      alert('Exam added successfully!');
+      await fetchData(); // Refresh data
+      showError('✅ Exam added successfully!');
     } catch (error) {
-      setError(error.message);
+      showError('An unexpected error occurred: ' + error.message);
     }
   };
 
@@ -505,10 +591,98 @@ const LecturerDashboard = ({ user }) => {
       </div>
 
       {error && (
-        <div className="alert alert-danger" role="alert">
-          {error}
+        <div 
+          className={`alert ${error.startsWith('✅') ? 'alert-success' : 'alert-danger'} alert-dismissible fade show`}
+          role="alert"
+          style={{
+            animation: 'slideIn 0.5s ease-out, fadeOut 0.5s ease-out 7.5s',
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1000,
+            maxWidth: '400px',
+            minWidth: '300px',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
+            borderRadius: '10px',
+            padding: '1rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            border: 'none',
+            background: error.startsWith('✅') 
+              ? 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
+              : 'linear-gradient(135deg, #dc3545 0%, #ff6b6b 100%)',
+            color: 'white',
+            fontSize: '0.95rem',
+            fontWeight: '500'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {error.startsWith('✅') ? (
+              <i className="fas fa-check-circle" style={{ fontSize: '1.2rem' }}></i>
+            ) : (
+              <i className="fas fa-exclamation-circle" style={{ fontSize: '1.2rem' }}></i>
+            )}
+            <div style={{ flex: 1 }}>
+              {error.startsWith('✅') ? error.substring(2) : error}
+            </div>
+            <button 
+              type="button" 
+              className="btn-close btn-close-white" 
+              onClick={() => setError('')}
+              style={{ opacity: 0.8, fontSize: '0.8rem' }}
+            ></button>
+          </div>
+          
+          {/* Progress bar */}
+          <div style={{ 
+            width: '100%', 
+            height: '3px', 
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '2px',
+            overflow: 'hidden',
+            marginTop: '4px'
+          }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              animation: 'progress 8s linear'
+            }} />
+          </div>
         </div>
       )}
+
+      <style>
+        {`
+          @keyframes slideIn {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          @keyframes fadeOut {
+            from {
+              opacity: 1;
+            }
+            to {
+              opacity: 0;
+            }
+          }
+          @keyframes progress {
+            from {
+              width: 100%;
+            }
+            to {
+              width: 0%;
+            }
+          }
+        `}
+      </style>
 
       {/* Statistics Cards */}
       <div className="row mb-4">
@@ -721,12 +895,18 @@ const LecturerDashboard = ({ user }) => {
                           <td style={{ minWidth: '110px' }}>
                             {isEditing ? (
                               <input
-                                type="number"
+                                type="text"
+                                pattern="[0-9]*"
+                                inputMode="numeric"
                                 className="form-control form-control-sm"
-                                min="0"
-                                max="100"
                                 value={editForm.score}
-                                onChange={(e) => setEditForm({ ...editForm, score: e.target.value })}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '' || /^\d+$/.test(value)) {
+                                    setEditForm({ ...editForm, score: value });
+                                  }
+                                }}
+                                placeholder="Enter marks (0-100)"
                               />
                             ) : (
                               <span className="fw-bold">{result.score}%</span>
@@ -838,13 +1018,19 @@ const LecturerDashboard = ({ user }) => {
                   <div className="mb-3">
                     <label htmlFor="score" className="form-label">Score</label>
                     <input
-                      type="number"
+                      type="text"
+                      pattern="[0-9]*"
+                      inputMode="numeric"
                       className="form-control"
                       id="score"
-                      min="0"
-                      max="100"
                       value={newResult.score}
-                      onChange={(e) => setNewResult({...newResult, score: e.target.value})}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '' || /^\d+$/.test(value)) {
+                          setNewResult({...newResult, score: value});
+                        }
+                      }}
+                      placeholder="Enter marks (0-100)"
                       required
                     />
                   </div>
