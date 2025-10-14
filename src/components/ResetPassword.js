@@ -126,7 +126,7 @@ const ResetPassword = () => {
         listener.subscription.unsubscribe();
       };
     }
-  }, [navigate]);
+  }, [navigate, hasRecoverySession, isCheckingSession]);
 
   const validatePassword = (password) => {
     const requirements = [
