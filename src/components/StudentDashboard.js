@@ -197,19 +197,17 @@ const StudentDashboard = ({ user }) => {
 
     // Summary stats + GPA/credits (4.0 scale)
     const scores = results.map(r => r.score);
-    const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0) / scores.length) : 0;
+    const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
     const hi = scores.length ? Math.max(...scores) : 0;
     const lo = scores.length ? Math.min(...scores) : 0;
     const totalExams = results.length;
-    const gradePoint = (s) => (s >= 90 ? 4.0 : s >= 80 ? 3.0 : s >= 70 ? 2.0 : s >= 60 ? 1.0 : 0.0);
-    const totalCredits = results.reduce((acc, r) => acc + (r.exams?.credits ?? DEFAULT_CREDITS), 0);
-    const qualityPoints = results.reduce((acc, r) => acc + gradePoint(r.score) * (r.exams?.credits ?? DEFAULT_CREDITS), 0);
-    const gpa = totalCredits > 0 ? (qualityPoints / totalCredits) : 0;
+    const totalScore = scores.length ? scores.reduce((a, b) => a + b, 0) : 0;
+    const gpa = scores.length ? (totalScore / (scores.length * 100)) * 100 : 0;  // GPA as percentage
 
       autoTable(doc, {
         startY: startY + 20,
-        head: [['Average', 'Highest', 'Lowest', 'Total Exams', 'Total Credits', 'GPA']],
-        body: [[`${avg}%`, `${hi}%`, `${lo}%`, `${totalExams}`, `${totalCredits}`, gpa.toFixed(2)]],
+        head: [['Average', 'Highest', 'Lowest', 'Total Exams', 'Total Marks', 'GPA']],
+        body: [[`${avg}%`, `${hi}%`, `${lo}%`, `${totalExams}`, `${totalExams * 100}`, `${gpa.toFixed(2)}%`]],
         styles: { fontSize: 11 },
         headStyles: { fillColor: [13, 110, 253] }
       });
