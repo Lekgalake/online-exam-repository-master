@@ -317,12 +317,37 @@ const StudentDashboard = ({ user }) => {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container-fluid px-4 py-3">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Student Dashboard</h1>
         <div>
-          <span className="me-3">Welcome, {user.email}</span>
-          <button className="btn btn-outline-danger" onClick={handleLogout}>
+          <h1 className="fw-bold mb-1" style={{ 
+            background: 'linear-gradient(135deg, #1a237e, #0d47a1)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            Student Dashboard
+          </h1>
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb mb-0">
+              <li className="breadcrumb-item">Home</li>
+              <li className="breadcrumb-item active" aria-current="page">Dashboard</li>
+            </ol>
+          </nav>
+        </div>
+        <div className="d-flex align-items-center gap-3">
+          <div className="text-end">
+            <div className="fw-bold text-primary">{studentName || user.email}</div>
+            <small className="text-muted">Student</small>
+          </div>
+          <button 
+            className="btn btn-outline-danger d-flex align-items-center gap-2" 
+            onClick={handleLogout}
+            style={{
+              borderRadius: '8px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <i className="fas fa-sign-out-alt"></i>
             Logout
           </button>
         </div>
@@ -336,127 +361,263 @@ const StudentDashboard = ({ user }) => {
 
       {/* Statistics Cards */}
       {results.length > 0 && (
-        <div className="row mb-4">
-          <div className="col-md-3">
-            <div className="card bg-primary text-white">
-              <div className="card-body text-center">
-                <h5 className="card-title">Average Score</h5>
-                <h2>{stats.average}%</h2>
+        <div className="row g-4 mb-4">
+          <div className="col-xl-3 col-md-6">
+            <div 
+              className="card h-100 border-0 shadow-sm hover-scale" 
+              style={{ 
+                background: 'linear-gradient(135deg, #4e73df 0%, #224abe 100%)',
+                borderRadius: '15px',
+                transition: 'transform 0.2s'
+              }}
+            >
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 className="text-white-50 mb-1">Average Score</h6>
+                    <h2 className="display-6 fw-bold text-white mb-0">{stats.average}%</h2>
+                  </div>
+                  <div 
+                    className="rounded-circle bg-white bg-opacity-25 p-3"
+                    style={{ width: '48px', height: '48px' }}
+                  >
+                    <i className="fas fa-chart-line text-white"></i>
+                  </div>
+                </div>
+                <div className="progress bg-white bg-opacity-25" style={{ height: '4px' }}>
+                  <div 
+                    className="progress-bar bg-white" 
+                    style={{ width: `${stats.average}%` }}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="col-md-3">
-            <div className="card bg-success text-white">
-              <div className="card-body text-center">
-                <h5 className="card-title">Highest Score</h5>
-                <h2>{stats.highest}%</h2>
+          <div className="col-xl-3 col-md-6">
+            <div 
+              className="card h-100 border-0 shadow-sm hover-scale" 
+              style={{ 
+                background: 'linear-gradient(135deg, #1cc88a 0%, #13855c 100%)',
+                borderRadius: '15px',
+                transition: 'transform 0.2s'
+              }}
+            >
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 className="text-white-50 mb-1">Highest Score</h6>
+                    <h2 className="display-6 fw-bold text-white mb-0">{stats.highest}%</h2>
+                  </div>
+                  <div 
+                    className="rounded-circle bg-white bg-opacity-25 p-3"
+                    style={{ width: '48px', height: '48px' }}
+                  >
+                    <i className="fas fa-trophy text-white"></i>
+                  </div>
+                </div>
+                <div className="progress bg-white bg-opacity-25" style={{ height: '4px' }}>
+                  <div 
+                    className="progress-bar bg-white" 
+                    style={{ width: `${stats.highest}%` }}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="col-md-3">
-            <div className="card bg-warning text-white">
-              <div className="card-body text-center">
-                <h5 className="card-title">Lowest Score</h5>
-                <h2>{stats.lowest}%</h2>
+          <div className="col-xl-3 col-md-6">
+            <div 
+              className="card h-100 border-0 shadow-sm hover-scale" 
+              style={{ 
+                background: 'linear-gradient(135deg, #36b9cc 0%, #258391 100%)',
+                borderRadius: '15px',
+                transition: 'transform 0.2s'
+              }}
+            >
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 className="text-white-50 mb-1">Total Exams</h6>
+                    <h2 className="display-6 fw-bold text-white mb-0">{stats.total}</h2>
+                  </div>
+                  <div 
+                    className="rounded-circle bg-white bg-opacity-25 p-3"
+                    style={{ width: '48px', height: '48px' }}
+                  >
+                    <i className="fas fa-book text-white"></i>
+                  </div>
+                </div>
+                <div className="text-white-50">
+                  <small>Completed Assessments</small>
+                </div>
               </div>
             </div>
           </div>
-          <div className="col-md-3">
-            <div className="card bg-info text-white">
-              <div className="card-body text-center">
-                <h5 className="card-title">Total Exams</h5>
-                <h2>{stats.total}</h2>
+          <div className="col-xl-3 col-md-6">
+            <div 
+              className="card h-100 border-0 shadow-sm hover-scale" 
+              style={{ 
+                background: 'linear-gradient(135deg, #f6c23e 0%, #dda20a 100%)',
+                borderRadius: '15px',
+                transition: 'transform 0.2s'
+              }}
+            >
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 className="text-white-50 mb-1">Distinctions</h6>
+                    <h2 className="display-6 fw-bold text-white mb-0">{stats.distinctions}</h2>
+                  </div>
+                  <div 
+                    className="rounded-circle bg-white bg-opacity-25 p-3"
+                    style={{ width: '48px', height: '48px' }}
+                  >
+                    <i className="fas fa-star text-white"></i>
+                  </div>
+                </div>
+                <div className="text-white-50">
+                  <small>Scores ≥ 75%</small>
+                </div>
               </div>
             </div>
           </div>
-          <div className="col-md-3">
-            <div className="card bg-warning text-dark">
-              <div className="card-body text-center">
-                <h5 className="card-title">
-                  <i className="fas fa-star me-2"></i>Distinctions
-                </h5>
-                <h2>{stats.distinctions}</h2>
-                <small>Scores ≥ 75%</small>
-              </div>
-            </div>
-          </div>
+          <style>
+            {`
+              .hover-scale:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+              }
+            `}
+          </style>
         </div>
       )}
 
-      <div className="card">
-        <div className="card-header d-flex justify-content-between align-items-center">
-          <h3>My Exam Results</h3>
-          {results.length > 0 && (
-            <div className="d-flex gap-2">
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                placeholder="Search exams..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '200px' }}
-              />
-              <select
-                className="form-select form-select-sm"
-                value={filterCourse}
-                onChange={(e) => setFilterCourse(e.target.value)}
-                style={{ width: '150px' }}
-              >
-                <option value="">All Courses</option>
-                {uniqueCourses.map(course => (
-                  <option key={course} value={course}>{course}</option>
-                ))}
-              </select>
-              <button className="btn btn-sm btn-outline-primary" onClick={exportAllToPdf}>
-                Export All (PDF)
-              </button>
-              <button className="btn btn-sm btn-primary" onClick={exportTranscriptPdf}>
-                Download Transcript
-              </button>
+      <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+        <div className="card-header bg-white border-0 py-3">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div className="d-flex align-items-center">
+              <i className="fas fa-list-alt fa-2x text-primary me-3"></i>
+              <h3 className="mb-0">My Exam Results</h3>
             </div>
-          )}
+            {results.length > 0 && (
+              <div className="d-flex flex-wrap gap-2">
+                <div className="position-relative">
+                  <i className="fas fa-search position-absolute text-muted" 
+                     style={{ top: '50%', left: '12px', transform: 'translateY(-50%)' }}></i>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search exams..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ 
+                      width: '200px',
+                      paddingLeft: '35px',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </div>
+                <select
+                  className="form-select"
+                  value={filterCourse}
+                  onChange={(e) => setFilterCourse(e.target.value)}
+                  style={{ 
+                    width: '180px',
+                    borderRadius: '8px'
+                  }}
+                >
+                  <option value="">📚 All Courses</option>
+                  {uniqueCourses.map(course => (
+                    <option key={course} value={course}>📘 {course}</option>
+                  ))}
+                </select>
+                <button 
+                  className="btn btn-outline-primary d-flex align-items-center gap-2"
+                  onClick={exportAllToPdf}
+                  style={{ borderRadius: '8px' }}
+                >
+                  <i className="fas fa-file-pdf"></i>
+                  Export All
+                </button>
+                <button 
+                  className="btn btn-primary d-flex align-items-center gap-2"
+                  onClick={exportTranscriptPdf}
+                  style={{ borderRadius: '8px' }}
+                >
+                  <i className="fas fa-download"></i>
+                  Download Transcript
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="card-body">
+        <div className="card-body p-0">
           {results.length === 0 ? (
             <div className="text-center py-5">
-              <i className="fas fa-graduation-cap fa-3x text-muted mb-3"></i>
-              <p className="text-muted">No results found. Please contact your lecturer if you believe this is an error.</p>
+              <div className="mb-3">
+                <i className="fas fa-graduation-cap fa-4x text-muted"></i>
+              </div>
+              <h4 className="text-muted mb-2">No Results Found</h4>
+              <p className="text-muted mb-0">Please contact your lecturer if you believe this is an error.</p>
             </div>
           ) : filteredResults.length === 0 ? (
-            <div className="text-center py-3">
-              <p className="text-muted">No results match your search criteria.</p>
+            <div className="text-center py-4">
+              <div className="mb-3">
+                <i className="fas fa-search fa-3x text-muted"></i>
+              </div>
+              <p className="text-muted mb-0">No results match your search criteria.</p>
             </div>
           ) : (
             <div className="table-responsive">
-              <table className="table table-striped table-hover">
-                <thead className="table-dark">
-                  <tr>
-                    <th>Course</th>
-                    <th>Exam</th>
-                    <th>Date</th>
-                    <th>Score</th>
-                    <th>Grade</th>
-                    <th>Status</th>
-                    <th className="text-end">Actions</th>
+              <table className="table table-hover mb-0">
+                <thead>
+                  <tr className="bg-light">
+                    <th className="border-0 py-3 ps-4">Course</th>
+                    <th className="border-0 py-3">Exam</th>
+                    <th className="border-0 py-3">Date</th>
+                    <th className="border-0 py-3">Score</th>
+                    <th className="border-0 py-3">Grade</th>
+                    <th className="border-0 py-3">Status</th>
+                    <th className="border-0 py-3 text-end pe-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredResults.map((result) => (
-                    <tr key={result.result_id}>
-                      <td>
-                        <strong>{result.exams?.course}</strong>
+                    <tr key={result.result_id} className="align-middle">
+                      <td className="ps-4">
+                        <div className="d-flex align-items-center">
+                          <div className="rounded-circle bg-primary bg-opacity-10 p-2 me-2">
+                            <i className="fas fa-book text-primary"></i>
+                          </div>
+                          <strong>{result.exams?.course}</strong>
+                        </div>
                       </td>
                       <td>{result.exams?.exam_name}</td>
-                      <td>{new Date(result.exams?.date).toLocaleDateString()}</td>
                       <td>
-                        <span className="fw-bold">{result.score}%</span>
+                        <i className="far fa-calendar-alt text-muted me-2"></i>
+                        {new Date(result.exams?.date).toLocaleDateString()}
                       </td>
                       <td>
-                        <span className={`badge ${
-                          result.score >= 90 ? 'bg-success' :
-                          result.score >= 80 ? 'bg-primary' :
-                          result.score >= 70 ? 'bg-warning' :
-                          result.score >= 50 ? 'bg-secondary' : 'bg-danger'
+                        <div className="d-flex align-items-center">
+                          <div className="me-2">
+                            <strong>{result.score}%</strong>
+                          </div>
+                          <div className="progress flex-grow-1" style={{ height: '6px', width: '60px' }}>
+                            <div 
+                              className="progress-bar" 
+                              style={{ 
+                                width: `${result.score}%`,
+                                backgroundColor: result.score >= 70 ? '#1cc88a' : '#f6c23e'
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge rounded-pill px-3 py-2 ${
+                          result.score >= 90 ? 'bg-gradient bg-success' :
+                          result.score >= 80 ? 'bg-gradient bg-primary' :
+                          result.score >= 70 ? 'bg-gradient bg-info' :
+                          result.score >= 50 ? 'bg-gradient bg-warning' : 'bg-gradient bg-danger'
                         }`}>
                           {result.score >= 90 ? 'A' :
                            result.score >= 80 ? 'B' :
@@ -464,20 +625,38 @@ const StudentDashboard = ({ user }) => {
                            result.score >= 50 ? 'D' : 'F'}
                         </span>
                         {result.score >= 75 && (
-                          <span className="badge bg-warning text-dark ms-2">
-                            <i className="fas fa-star me-1"></i>Distinction
+                          <span 
+                            className="badge bg-warning text-dark ms-2"
+                            style={{ 
+                              background: 'linear-gradient(135deg, #ffd700 0%, #ffa500 100%)',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            <i className="fas fa-star me-1"></i>
+                            Distinction
                           </span>
                         )}
                       </td>
                       <td>
-                        <span className={`badge ${
-                          result.score >= 70 ? 'bg-success' : 'bg-warning'
+                        <span className={`badge rounded-pill px-3 py-2 ${
+                          result.score >= 70 
+                            ? 'bg-success-subtle text-success border border-success' 
+                            : 'bg-warning-subtle text-warning border border-warning'
                         }`}>
+                          <i className={`fas fa-${result.score >= 70 ? 'check' : 'exclamation-triangle'} me-1`}></i>
                           {result.score >= 70 ? 'Pass' : 'Needs Improvement'}
                         </span>
                       </td>
-                      <td className="text-end">
-                        <button className="btn btn-sm btn-outline-secondary" onClick={() => exportSingleToPdf(result)}>
+                      <td className="text-end pe-4">
+                        <button 
+                          className="btn btn-light btn-sm d-inline-flex align-items-center gap-2"
+                          onClick={() => exportSingleToPdf(result)}
+                          style={{ 
+                            borderRadius: '6px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                          }}
+                        >
+                          <i className="fas fa-download"></i>
                           PDF
                         </button>
                       </td>
@@ -489,6 +668,19 @@ const StudentDashboard = ({ user }) => {
           )}
         </div>
       </div>
+
+      <style>
+        {`
+          .table > :not(caption) > * > * {
+            padding: 1rem 0.5rem;
+          }
+          .progress {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+          }
+        `}
+      </style>
     </div>
   );
 };
