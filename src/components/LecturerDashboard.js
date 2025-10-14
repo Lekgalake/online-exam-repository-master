@@ -218,6 +218,36 @@ const LecturerDashboard = ({ user }) => {
     }
   };
 
+  // Function to handle exam deletion
+  const handleDeleteExam = async (examId) => {
+    if (!window.confirm('Are you sure you want to delete this exam? This will also delete all associated results.')) {
+      return;
+    }
+
+    try {
+      // First delete all results for this exam
+      const { error: resultsError } = await supabase
+        .from('results')
+        .delete()
+        .eq('exam_id', examId);
+
+      if (resultsError) throw resultsError;
+
+      // Then delete the exam
+      const { error: examError } = await supabase
+        .from('exams')
+        .delete()
+        .eq('exam_id', examId);
+
+      if (examError) throw examError;
+
+      await fetchData(); // Refresh the data
+      alert('Exam and associated results deleted successfully!');
+    } catch (error) {
+      setError(`Failed to delete exam: ${error.message}`);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       // Check if there's an active session first
@@ -833,6 +863,41 @@ const LecturerDashboard = ({ user }) => {
             <h3>Add New Exam</h3>
           </div>
           <div className="card-body">
+            {/* Existing Exams Table */}
+            <div className="mb-4">
+              <h4>Existing Exams</h4>
+              <div className="table-responsive">
+                <table className="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Course</th>
+                      <th>Exam Name</th>
+                      <th>Date</th>
+                      <th>Credits</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exams.map((exam) => (
+                      <tr key={exam.exam_id}>
+                        <td>{exam.course}</td>
+                        <td>{exam.exam_name}</td>
+                        <td>{new Date(exam.date).toLocaleDateString()}</td>
+                        <td>{exam.credits}</td>
+                        <td>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteExam(exam.exam_id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <form onSubmit={handleAddExam}>
               <div className="row">
                 <div className="col-md-4">
