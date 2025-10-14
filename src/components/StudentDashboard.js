@@ -68,15 +68,17 @@ const StudentDashboard = ({ user }) => {
   };
 
   // ===== PDF helpers =====
+  // Update gradeFor function thresholds
   const gradeFor = (score) => {
     if (score >= 90) return 'A';
     if (score >= 80) return 'B';
     if (score >= 70) return 'C';
-    if (score >= 60) return 'D';
+    if (score >= 50) return 'D';
     return 'F';
   };
 
-  const statusFor = (score) => (score >= 70 ? 'Pass' : 'Needs Improvement');
+  // Update statusFor function thresholds
+  const statusFor = (score) => (score >= 50 ? 'Pass' : 'Needs Improvement');
 
   const exportAllToPdf = () => {
     try {
@@ -456,12 +458,12 @@ const StudentDashboard = ({ user }) => {
                           result.score >= 90 ? 'bg-success' :
                           result.score >= 80 ? 'bg-primary' :
                           result.score >= 70 ? 'bg-warning' :
-                          result.score >= 60 ? 'bg-secondary' : 'bg-danger'
+                          result.score >= 50 ? 'bg-secondary' : 'bg-danger'
                         }`}>
                           {result.score >= 90 ? 'A' :
                            result.score >= 80 ? 'B' :
                            result.score >= 70 ? 'C' :
-                           result.score >= 60 ? 'D' : 'F'}
+                           result.score >= 50 ? 'D' : 'F'}
                         </span>
                         {result.score >= 75 && (
                           <span className="badge bg-warning text-dark ms-2">
