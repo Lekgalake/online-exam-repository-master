@@ -44,7 +44,7 @@ const LecturerDashboard = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Error handling utility
-  const showError = (message) => {
+  const showError = React.useCallback((message) => {
     setError(message);
     // Clear any existing timeout
     if (errorTimeout) {
@@ -53,7 +53,8 @@ const LecturerDashboard = ({ user }) => {
     // Set new timeout to clear error after 8 seconds
     const timeout = setTimeout(() => setError(''), 8000);
     setErrorTimeout(timeout);
-  };
+  }, [errorTimeout]);
+
   const [filterStudent, setFilterStudent] = useState('');
   const [filterCourse, setFilterCourse] = useState('');
   // Analytics filters
@@ -61,6 +62,44 @@ const LecturerDashboard = ({ user }) => {
   const [analyticsExam, setAnalyticsExam] = useState('');
   const [analyticsStartDate, setAnalyticsStartDate] = useState('');
   const [analyticsEndDate, setAnalyticsEndDate] = useState('');
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all data in parallel
+      const [studentsResult, examsResult, resultsResult] = await Promise.all([
+        supabase.from('students').select('*').order('name'),
+        supabase.from('exams').select('*').order('date', { ascending: false }),
+        supabase.from('results').select(`
+          *,
+          students (name, email),
+          exams (exam_name, course, date)
+        `).order('created_at', { ascending: false })
+      ]);
+
+      if (studentsResult.error) {
+        showError('Failed to fetch students: ' + studentsResult.error.message);
+        return;
+      }
+      if (examsResult.error) {
+        showError('Failed to fetch exams: ' + examsResult.error.message);
+        return;
+      }
+      if (resultsResult.error) {
+        showError('Failed to fetch results: ' + resultsResult.error.message);
+        return;
+      }
+
+      setStudents(studentsResult.data || []);
+      setExams(examsResult.data || []);
+      setResults(resultsResult.data || []);
+    } catch (error) {
+      showError('An unexpected error occurred: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
 
     // Remove student handler
     const handleRemoveStudent = async (student_id) => {
@@ -141,45 +180,9 @@ const LecturerDashboard = ({ user }) => {
     return () => {
       studentsSubscription.unsubscribe();
     };
-  }, []);
+  }, [fetchData]);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch all data in parallel
-      const [studentsResult, examsResult, resultsResult] = await Promise.all([
-        supabase.from('students').select('*').order('name'),
-        supabase.from('exams').select('*').order('date', { ascending: false }),
-        supabase.from('results').select(`
-          *,
-          students (name, email),
-          exams (exam_name, course, date)
-        `).order('created_at', { ascending: false })
-      ]);
 
-      if (studentsResult.error) {
-        showError('Failed to fetch students: ' + studentsResult.error.message);
-        return;
-      }
-      if (examsResult.error) {
-        showError('Failed to fetch exams: ' + examsResult.error.message);
-        return;
-      }
-      if (resultsResult.error) {
-        showError('Failed to fetch results: ' + resultsResult.error.message);
-        return;
-      }
-
-      setStudents(studentsResult.data || []);
-      setExams(examsResult.data || []);
-      setResults(resultsResult.data || []);
-    } catch (error) {
-      showError('An unexpected error occurred: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Helpers for inline editing
   const getExamById = (id) => exams.find(x => String(x.exam_id) === String(id));
