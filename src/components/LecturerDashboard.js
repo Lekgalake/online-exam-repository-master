@@ -39,7 +39,6 @@ const LecturerDashboard = ({ user }) => {
   const [addingExam, setAddingExam] = useState(false);
   const [editingResult, setEditingResult] = useState(false);
   const [deletingExam, setDeletingExam] = useState(false);
-  const [deletingResult, setDeletingResult] = useState(false);
   const [uploadingCsv, setUploadingCsv] = useState(false);
   const [activeTab, setActiveTab] = useState('results');
   const [searchTerm, setSearchTerm] = useState('');
@@ -1720,20 +1719,55 @@ const LecturerDashboard = ({ user }) => {
                       <span className="summary-label">Overall GPA</span>
                       <span className="summary-value">{(() => {
                         const studentResults = filteredResults.filter(r => r.students?.name === filterStudent);
-                        const totalScore = studentResults.length ? 
-                          studentResults.reduce((a, b) => a + b.score, 0) : 0;
-                        const gpa = studentResults.length ? 
-                          (totalScore / (studentResults.length * 100)) * 100 : 0;
-                        return `${gpa.toFixed(2)}%`;
+                        
+                        // Calculate GPA based on grade points
+                        const totalPoints = studentResults.reduce((sum, r) => {
+                          // Get the credits for this exam
+                          const exam = exams.find(e => e.exam_id === r.exam_id);
+                          const credits = exam?.credits || 3;
+                          
+                          // Calculate grade points
+                          let gradePoints;
+                          if (r.score >= 90) gradePoints = 4.0;      // A  = 4.0
+                          else if (r.score >= 85) gradePoints = 3.7;  // A- = 3.7
+                          else if (r.score >= 80) gradePoints = 3.3;  // B+ = 3.3
+                          else if (r.score >= 75) gradePoints = 3.0;  // B  = 3.0
+                          else if (r.score >= 70) gradePoints = 2.7;  // B- = 2.7
+                          else if (r.score >= 65) gradePoints = 2.3;  // C+ = 2.3
+                          else if (r.score >= 60) gradePoints = 2.0;  // C  = 2.0
+                          else if (r.score >= 55) gradePoints = 1.7;  // C- = 1.7
+                          else if (r.score >= 50) gradePoints = 1.3;  // D+ = 1.3
+                          else if (r.score >= 45) gradePoints = 1.0;  // D  = 1.0
+                          else gradePoints = 0.0;                     // F  = 0.0
+                          
+                          return sum + (gradePoints * credits);
+                        }, 0);
+
+                        // Calculate total credits
+                        const totalCredits = studentResults.reduce((sum, r) => {
+                          const exam = exams.find(e => e.exam_id === r.exam_id);
+                          return sum + (exam?.credits || 3);
+                        }, 0);
+
+                        // Calculate GPA
+                        const gpa = totalCredits > 0 ? totalPoints / totalCredits : 0;
+                        
+                        return gpa.toFixed(2);
                       })()}</span>
                       <div className="gpa-scale mt-2 text-start small">
-                        <div className="text-muted mb-1">Grade Scale:</div>
+                        <div className="text-muted mb-1">GPA Scale:</div>
                         <div className="d-flex flex-wrap gap-3">
-                          <span>A (90-100%)</span>
-                          <span>B (80-89%)</span>
-                          <span>C (70-79%)</span>
-                          <span>D (50-69%)</span>
-                          <span>F (0-49%)</span>
+                          <span>A (90-100): 4.0</span>
+                          <span>A- (85-89): 3.7</span>
+                          <span>B+ (80-84): 3.3</span>
+                          <span>B (75-79): 3.0</span>
+                          <span>B- (70-74): 2.7</span>
+                          <span>C+ (65-69): 2.3</span>
+                          <span>C (60-64): 2.0</span>
+                          <span>C- (55-59): 1.7</span>
+                          <span>D+ (50-54): 1.3</span>
+                          <span>D (45-49): 1.0</span>
+                          <span>F (0-44): 0.0</span>
                         </div>
                       </div>
                     </div>
