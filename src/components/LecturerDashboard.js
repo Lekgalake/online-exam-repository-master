@@ -513,17 +513,25 @@ const LecturerDashboard = ({ user }) => {
   const uniqueCourses = [...new Set(results.map(r => r.exams?.course).filter(Boolean))];
 
   // Calculate statistics
-  const calculateStats = () => {
-    if (results.length === 0) return { totalStudents: 0, totalExams: 0, averageScore: 0, totalResults: 0 };
-    
-    // Use the actual number of registered students instead of unique students in results
+  const calculateStats = React.useCallback(() => {
+    // Always use students.length for total students, even if there are no results
     const totalStudents = students.length;
+    
+    if (results.length === 0) {
+      return { 
+        totalStudents,
+        totalExams: exams.length,
+        averageScore: 0,
+        totalResults: 0
+      };
+    }
+    
     const totalExams = exams.length;
     const scores = results.map(r => r.score);
     const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
     
     return { totalStudents, totalExams, averageScore, totalResults: results.length };
-  };
+  }, [students.length, exams.length, results]);
 
   const stats = calculateStats();
 
