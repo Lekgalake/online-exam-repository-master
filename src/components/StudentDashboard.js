@@ -210,8 +210,8 @@ const StudentDashboard = ({ user }) => {
 
       autoTable(doc, {
         startY: startY + 20,
-        head: [['Average', 'Highest', 'Lowest', 'Total Exams', 'Total Marks', 'GPA']],
-        body: [[`${avg}%`, `${hi}%`, `${lo}%`, `${totalExams}`, `${totalExams * 100}`, `${gpa.toFixed(2)}%`]],
+        head: [['Average', 'Highest', 'Lowest', 'Total Exams', 'GPA']],
+        body: [[`${avg}%`, `${hi}%`, `${lo}%`, `${totalExams}`, `${gpa.toFixed(2)}%`]],
         styles: { fontSize: 11 },
         headStyles: { fillColor: [13, 110, 253] }
       });
