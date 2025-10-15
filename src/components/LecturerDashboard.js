@@ -1719,31 +1719,15 @@ const LecturerDashboard = ({ user }) => {
                       }</span>
                     </div>
                     <div className="summary-item">
-                      <span className="summary-label">Overall GPA</span>
+                      <span className="summary-label">Overall Average</span>
                       <span className="summary-value">{(() => {
                         const studentResults = filteredResults.filter(r => r.students?.name === filterStudent);
                         
-                        // Calculate GPA based on grade points
-                        const totalPoints = studentResults.reduce((sum, r) => {
-                          // Get the credits for this exam
+                        // Calculate weighted average based on credits
+                        const weightedSum = studentResults.reduce((sum, r) => {
                           const exam = exams.find(e => e.exam_id === r.exam_id);
                           const credits = exam?.credits || 3;
-                          
-                          // Calculate grade points
-                          let gradePoints;
-                          if (r.score >= 90) gradePoints = 4.0;      // A  = 4.0
-                          else if (r.score >= 85) gradePoints = 3.7;  // A- = 3.7
-                          else if (r.score >= 80) gradePoints = 3.3;  // B+ = 3.3
-                          else if (r.score >= 75) gradePoints = 3.0;  // B  = 3.0
-                          else if (r.score >= 70) gradePoints = 2.7;  // B- = 2.7
-                          else if (r.score >= 65) gradePoints = 2.3;  // C+ = 2.3
-                          else if (r.score >= 60) gradePoints = 2.0;  // C  = 2.0
-                          else if (r.score >= 55) gradePoints = 1.7;  // C- = 1.7
-                          else if (r.score >= 50) gradePoints = 1.3;  // D+ = 1.3
-                          else if (r.score >= 45) gradePoints = 1.0;  // D  = 1.0
-                          else gradePoints = 0.0;                     // F  = 0.0
-                          
-                          return sum + (gradePoints * credits);
+                          return sum + (r.score * credits);
                         }, 0);
 
                         // Calculate total credits
@@ -1752,27 +1736,48 @@ const LecturerDashboard = ({ user }) => {
                           return sum + (exam?.credits || 3);
                         }, 0);
 
-                        // Calculate GPA
-                        const gpa = totalCredits > 0 ? totalPoints / totalCredits : 0;
+                        // Calculate weighted average percentage
+                        const average = totalCredits > 0 ? weightedSum / totalCredits : 0;
                         
-                        return gpa.toFixed(2);
+                        return `${average.toFixed(1)}%`;
                       })()}</span>
-                      <div className="gpa-scale mt-2 text-start small">
-                        <div className="text-muted mb-1">GPA Scale:</div>
-                        <div className="d-flex flex-wrap gap-3">
-                          <span>A (90-100): 4.0</span>
-                          <span>A- (85-89): 3.7</span>
-                          <span>B+ (80-84): 3.3</span>
-                          <span>B (75-79): 3.0</span>
-                          <span>B- (70-74): 2.7</span>
-                          <span>C+ (65-69): 2.3</span>
-                          <span>C (60-64): 2.0</span>
-                          <span>C- (55-59): 1.7</span>
-                          <span>D+ (50-54): 1.3</span>
-                          <span>D (45-49): 1.0</span>
-                          <span>F (0-44): 0.0</span>
+                      <div className="grade-scale mt-2">
+                        <div className="grade-bar">
+                          <div 
+                            className="grade-progress" 
+                            style={{ 
+                              width: `${(() => {
+                                const studentResults = filteredResults.filter(r => r.students?.name === filterStudent);
+                                if (studentResults.length === 0) return 0;
+                                const avg = studentResults.reduce((sum, r) => sum + r.score, 0) / studentResults.length;
+                                return avg;
+                              })()}%`
+                            }}
+                          ></div>
                         </div>
                       </div>
+
+                      <style>
+                        {`
+                          .grade-scale {
+                            margin-top: 1rem;
+                          }
+                          
+                          .grade-bar {
+                            width: 100%;
+                            height: 8px;
+                            background: #e9ecef;
+                            border-radius: 4px;
+                            overflow: hidden;
+                          }
+                          
+                          .grade-progress {
+                            height: 100%;
+                            background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #198754 100%);
+                            transition: width 0.3s ease;
+                          }
+                        `}
+                      </style>
                     </div>
                   </div>
                 </div>
