@@ -78,7 +78,11 @@ const StudentDashboard = ({ user }) => {
   };
 
   // Update statusFor function thresholds
-  const statusFor = (score) => (score >= 50 ? 'Pass' : 'Needs Improvement');
+  const statusFor = (score) => {
+    if (score >= 75) return 'Distinction';
+    if (score >= 50) return 'Pass';
+    return 'Fail';
+  };
 
   const exportAllToPdf = () => {
     try {
@@ -624,27 +628,23 @@ const StudentDashboard = ({ user }) => {
                            result.score >= 70 ? 'C' :
                            result.score >= 50 ? 'D' : 'F'}
                         </span>
-                        {result.score >= 75 && (
-                          <span 
-                            className="badge bg-warning text-dark ms-2"
-                            style={{ 
-                              background: 'linear-gradient(135deg, #ffd700 0%, #ffa500 100%)',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                          >
-                            <i className="fas fa-star me-1"></i>
-                            Distinction
-                          </span>
-                        )}
                       </td>
                       <td>
                         <span className={`badge rounded-pill px-3 py-2 ${
-                          result.score >= 70 
-                            ? 'bg-success-subtle text-success border border-success' 
-                            : 'bg-warning-subtle text-warning border border-warning'
+                          result.score >= 75 
+                            ? 'bg-primary-subtle text-primary border border-primary' 
+                            : result.score >= 50
+                            ? 'bg-success-subtle text-success border border-success'
+                            : 'bg-danger-subtle text-danger border border-danger'
                         }`}>
-                          <i className={`fas fa-${result.score >= 70 ? 'check' : 'exclamation-triangle'} me-1`}></i>
-                          {result.score >= 70 ? 'Pass' : 'Needs Improvement'}
+                          <i className={`fas fa-${
+                            result.score >= 75 
+                              ? 'award'
+                              : result.score >= 50 
+                              ? 'check' 
+                              : 'times'
+                          } me-1`}></i>
+                          {statusFor(result.score)}
                         </span>
                       </td>
                       <td className="text-end pe-4">

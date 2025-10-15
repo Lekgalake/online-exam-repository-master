@@ -1239,9 +1239,12 @@ const LecturerDashboard = ({ user }) => {
                           </td>
                           <td>
                             <span className={`badge ${
-                              (isEditing ? editForm.score : result.score) >= 70 ? 'bg-success' : 'bg-warning'
+                              (isEditing ? editForm.score : result.score) >= 75 ? 'bg-success' :
+                              (isEditing ? editForm.score : result.score) >= 50 ? 'bg-primary' :
+                              'bg-danger'
                             }`}>
-                              {(isEditing ? editForm.score : result.score) >= 70 ? 'Pass' : 'Needs Improvement'}
+                              {(isEditing ? editForm.score : result.score) >= 75 ? 'Distinction' :
+                               (isEditing ? editForm.score : result.score) >= 50 ? 'Pass' : 'Fail'}
                             </span>
                           </td>
                           <td className="text-end" style={{ minWidth: '180px' }}>
@@ -1688,9 +1691,12 @@ const LecturerDashboard = ({ user }) => {
                                   </td>
                                   <td>
                                     <span className={`badge ${
-                                      result.score >= 70 ? 'bg-success' : 'bg-warning'
+                                      result.score >= 75 ? 'bg-success' :
+                                      result.score >= 50 ? 'bg-primary' :
+                                      'bg-danger'
                                     }`}>
-                                      {result.score >= 70 ? 'Pass' : 'Needs Improvement'}
+                                      {result.score >= 75 ? 'Distinction' :
+                                       result.score >= 50 ? 'Pass' : 'Fail'}
                                     </span>
                                   </td>
                                 </tr>
