@@ -2,6 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const StudentDashboard = ({ user }) => {
   const [results, setResults] = useState([]);
@@ -10,6 +36,7 @@ const StudentDashboard = ({ user }) => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCourse, setFilterCourse] = useState('');
+  const [showAnalytics, setShowAnalytics] = useState(false);
   // Default credits for each exam (schema has no credits field). Update if you add credits to DB.
   const DEFAULT_CREDITS = 3;
 
@@ -550,10 +577,133 @@ const StudentDashboard = ({ user }) => {
                   <i className="fas fa-download"></i>
                   Download Transcript
                 </button>
+                <button 
+                  className={`btn ${showAnalytics ? 'btn-info' : 'btn-outline-info'} d-flex align-items-center gap-2`}
+                  onClick={() => setShowAnalytics(!showAnalytics)}
+                  style={{ borderRadius: '8px' }}
+                >
+                  <i className="fas fa-chart-bar"></i>
+                  Analytics
+                </button>
               </div>
             )}
           </div>
         </div>
+        {results.length > 0 && showAnalytics && (
+          <div className="analytics-section">
+            <div className="card-body border-top">
+              <div className="row g-4">
+                {/* Performance Trend */}
+                <div className="col-md-12 mb-4">
+                  <div className="card h-100 border-0 bg-light">
+                    <div className="card-body">
+                      <h5 className="card-title">Performance Over Time</h5>
+                      <div className="chart-container" style={{ height: '300px' }}>
+                        <Line
+                          data={{
+                            labels: results.map(r => new Date(r.exams?.date).toLocaleDateString()),
+                            datasets: [{
+                              label: 'Score',
+                              data: results.map(r => r.score),
+                              borderColor: '#4e73df',
+                              backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                              fill: true
+                            }]
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                                max: 100
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Grade Distribution */}
+                <div className="col-md-6">
+                  <div className="card h-100 border-0 bg-light">
+                    <div className="card-body">
+                      <h5 className="card-title">Grade Distribution</h5>
+                      <div className="chart-container" style={{ height: '300px' }}>
+                        <Bar
+                          data={{
+                            labels: ['A', 'B', 'C', 'D', 'F'],
+                            datasets: [{
+                              label: 'Number of Grades',
+                              data: [
+                                results.filter(r => r.score >= 90).length,
+                                results.filter(r => r.score >= 80 && r.score < 90).length,
+                                results.filter(r => r.score >= 70 && r.score < 80).length,
+                                results.filter(r => r.score >= 50 && r.score < 70).length,
+                                results.filter(r => r.score < 50).length
+                              ],
+                              backgroundColor: [
+                                '#1cc88a', // A - Green
+                                '#4e73df', // B - Blue
+                                '#36b9cc', // C - Cyan
+                                '#f6c23e', // D - Yellow
+                                '#e74a3b'  // F - Red
+                              ]
+                            }]
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                                ticks: {
+                                  stepSize: 1
+                                }
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Status Distribution */}
+                <div className="col-md-6">
+                  <div className="card h-100 border-0 bg-light">
+                    <div className="card-body">
+                      <h5 className="card-title">Performance Status</h5>
+                      <div className="chart-container" style={{ height: '300px' }}>
+                        <Doughnut
+                          data={{
+                            labels: ['Distinction', 'Pass', 'Fail'],
+                            datasets: [{
+                              data: [
+                                results.filter(r => r.score >= 75).length,
+                                results.filter(r => r.score >= 50 && r.score < 75).length,
+                                results.filter(r => r.score < 50).length
+                              ],
+                              backgroundColor: [
+                                '#4e73df', // Distinction - Blue
+                                '#1cc88a', // Pass - Green
+                                '#e74a3b'  // Fail - Red
+                              ]
+                            }]
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="card-body p-0">
           {results.length === 0 ? (
             <div className="text-center py-5">
